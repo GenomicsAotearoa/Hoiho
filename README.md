@@ -1,3 +1,4 @@
+```mermaid
 flowchart TB
   %% Nodes
   asm["Genome Assembly"]
@@ -34,3 +35,4 @@ flowchart TB
   class asm,ann,vc,vf core;
   class wga,adna,beast,arg,mig,gwas,pgs analysis;
   class phen external;
+```
