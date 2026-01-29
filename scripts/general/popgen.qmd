@@ -1,0 +1,263 @@
+---
+title: "Hoiho Pop Gen Dashboard"
+author: ""
+format: 
+    dashboard:
+        expandable: false
+        scrolling: false
+theme: flatly
+---
+
+```{python}
+#| output: false
+#| echo: false
+
+# merged.filtered.qual20_fmissing0.2.2alleles.snpsonly.pp6_pp19_removed.filtered_qual99.maf0.05.bcf
+
+import seaborn as sns
+import polars as pl
+import plotly.express as px
+
+import plotly.io as pio
+
+pio.renderers.default = "plotly_mimetype+notebook_connected"
+
+# Load up metadata from "DNA from hoiho genomesv2.csv"
+metadata = pl.read_csv(
+    "Hoiho_Genomes_Cleaned_Nov4_24_24.csv", separator="\t"
+)
+
+metadata = metadata.with_columns(
+    pl.col("ID").replace("P29 ", "P29").alias("ID")
+)
+
+# Next is C101/CE9
+metadata = metadata.with_columns(
+    pl.col("ID").replace("C101/CE9", "CE9").alias("ID")
+)
+
+# bcftools view '-eF_MISSING>0.2 | QUAL < 99' -s^PP6,PP19 -v snps --threads 32 --min-af 0.05:minor -m2 -M2  -Ob -o merged.a9.filtered.qual99_fmissing0.2.maf0.05.biallelic.bcf merged.a9.unfiltered.bcf
+# pixi run plink2 --allow-extra-chr --bcf merged.a9.filtered.qual99_fmissing0.2.maf0.05.biallelic.bcf --pca --out merged.a9.filtered.qual99_fmissing0.2.maf0.05.biallelic --vcf-half-call missing
+
+# bcftools view '-eQUAL < 99' -s^PP6,PP19 -v snps --threads 32 --min-af 0.05:minor -m2 -M2  -Ob -o merged.a9.filtered.qual99.maf0.05.biallelic.bcf merged.a9.unfiltered.bcf
+# pixi run plink2 --allow-extra-chr --bcf merged.a9.filtered.qual99.maf0.05.biallelic.bcf --pca --out merged.a9.filtered.qual99.maf0.05.biallelic --vcf-half-call missing
+
+eigenvec = pl.read_csv("merged.a9.filtered.qual99_fmissing0.2.maf0.05.biallelic.eigenvec",
+  separator="\t")
+# eigenvec = pl.read_csv("merged.a9.filtered.qual99.maf0.05.biallelic", separator="\t")
+# eigenvec = pl.read_csv("removed_qual99_maf0.05.eigenvec", separator="\t")
+eigenvec = eigenvec.rename(mapping={"#IID": "ID"})
+joined = eigenvec.join(metadata, on="ID", how="inner")
+
+# Load up the eigenval
+eigenval = pl.read_csv(
+    "merged.a9.filtered.qual99_fmissing0.2.maf0.05.biallelic.eigenval", separator="\t", has_header=False
+)
+# Convert eigenval to a simple list
+eigenval = eigenval.to_pandas().iloc[:, 0].tolist()
+
+# AF
+# AF    [2]id   [3]allele frequency     [4]number of SNPs       [5]number of transitions        [6]number of transversions      [7]number of indels     [8]repeat-consistent    [9]repeat-inconsistent  [10]not applicable
+
+af = pl.read_csv("af", separator="\t", has_header=False, new_columns=["_", "ID", "AF", "SNPs", "Transitions", "Transversions", "Indels", "Repeat Consistent", "Repeat Inconsistent", "Not Applicable"])
+
+# PSC
+# PSC   [2]id   [3]sample       [4]nRefHom      [5]nNonRefHom   [6]nHets        [7]nTransitions [8]nTransversions       [9]nIndels      [10]average depth       [11]nSingletons [12]nHapRef     [13]nHapAlt     [14]nMissing
+psc_raw = pl.read_csv("psc", new_columns=["_", "_ID", "ID", "nRefHom", "nNonRefHom", "nHets", "nTransitions", "nTransversions", "nIndels", "Average Depth", "nSingletons", "nHapRef", "nHapAlt", "nMissing"], has_header=False, separator='\t')
+psc = psc_raw.select(pl.col("ID"), pl.col("nRefHom"), pl.col("nNonRefHom"), pl.col("nHets"), pl.col("nIndels"), pl.col("Average Depth"), pl.col("nSingletons"), pl.col("nMissing"))
+
+# Merge with metadata
+psc = psc.join(metadata, on="ID", how="inner")
+
+# ROH
+#roh = pl.read_csv("rg", new_columns=["RG", "Sample", "Chromosome", "Start", "End", "Length", "NumberOfMarkers", "Quality"], #has_header=False, separator='\t')
+#longest_roh = max(roh["Length"])
+#roh = roh.join(metadata, on="Sample", how="inner")
+#roh = roh.select(pl.col("Sample"), pl.col("Chromosome"), pl.col("Length")).to_pandas()
+#roh = roh.sort_values(by="Length", ascending=False)
+#roh = roh.head(int(len(roh) * 0.90))
+
+# Export to OJS
+if "ojs_define" in dir():
+  ojs_define(joined = joined.to_pandas())
+  ojs_define(eigenval = eigenval)
+  ojs_define(metadata = metadata.to_pandas())
+  ojs_define(af = af.to_pandas())
+  ojs_define(psc = psc.to_pandas())
+```
+
+```{ojs}
+//| output: false
+//| echo: false
+
+joined_t = transpose(joined)
+metadata_t = transpose(metadata)
+af_t = transpose(af)
+psc_t = transpose(psc)
+```
+
+# PCA
+
+## Row { height=70% }
+
+### {.sidebar}
+```{ojs}
+viewof colorby = Inputs.radio(["Population", "Health status", "Season", "Location", "Sex", "Type of sample", "RDS Status", "DS Status", "Health status", "COD", "Age", "GV Status (P2 P3 primers)"], {label: "Color By:", value: "Population"})
+viewof pca_x_axis = Inputs.range([1, 10], {label: "PCA X Axis", step: 1, value: 1})
+viewof pca_y_axis = Inputs.range([1, 10], {label: "PCA Y Axis", step: 1, value: 2})
+
+```
+
+### Column { .fill }
+```{ojs}
+// label: fig-population-pca
+//| fig-cap: PCA of population structure
+Plot.plot({
+  round: true,
+  color: {legend: true},
+  grid: true,
+  inset: 40,
+  marks: [
+    Plot.frame(),
+    Plot.dot(joined_t, 
+        {x: "PC" + pca_x_axis, 
+         y: "PC" + pca_y_axis, 
+         tip: true, 
+         fill: colorby, 
+         height: "80%",
+         channels: {
+            ID: "ID",
+            Location: "Location",
+            "Subs v Mainland": "Subs v Mainland",
+            "Health status": "Health status",
+         }
+         
+        }),
+    
+  ]
+})
+```
+
+
+#### Row
+```{ojs}
+//| include: false
+pca_x_value_explains = eigenval[pca_x_axis]
+```
+
+::: {.valuebox icon="percent" color="primary"}
+PC`{ojs} pca_x_axis` explains
+
+`{ojs} pca_x_value_explains`%
+:::
+
+```{ojs}
+//| include: false
+pca_y_value_explains = eigenval[pca_y_axis]
+```
+
+::: {.valuebox icon="percent" color="primary"}
+PC`{ojs} pca_y_axis` explains
+
+`{ojs} pca_y_value_explains`%
+:::
+
+# Metadata
+
+## Row
+::: {.valuebox icon="list-check" color="primary"}
+251 Samples
+:::
+
+::: {.valuebox icon="filter-circle" color="primary"}
+MAF 0.05, QUAL > 99 
+F_MISSING < 0.2 
+Biallelic SNPs Only
+:::
+
+::: {.valuebox icon="fingerprint" color="primary"}
+776,044 SNPs
+:::
+
+::: {.valuebox icon="rulers" color="primary"}
+1.97 ts/tv
+:::
+
+## Row
+
+```{ojs}
+viewof metadata_search = Inputs.search(metadata_t)
+Inputs.table(metadata_search, {rows: 1000, height: "90%"})
+```
+
+# Allele Frequency
+```{ojs}
+Plot.plot({
+  round: true,
+  grid: true,
+  inset: 40,
+  marks: [
+    Plot.frame(),
+    Plot.barY(af_t, 
+        {x: "AF", 
+         y: "SNPs", 
+         tip: true, 
+         fill: "SNPs", 
+         height: "80%",
+         channels: {
+            AF: "AF",
+            SNP: "SNPs",
+            Transitions: "Transitions",
+            Transversions: "Transversions",
+         },
+        }),
+  ]
+})
+```
+
+```{ojs}
+Inputs.table(af_t, {rows: 1000, height: "90%"})
+```
+
+# PSC
+
+## {.sidebar}
+```{ojs}
+// Set default value of Subs v Mainland
+viewof psc_x_axis = Inputs.radio(
+    ["Average Depth", "nMissing", "nRefHom", "nNonRefHom", "nHets"],
+
+    {label: "X-axis", value: "Average Depth"})
+
+viewof psc_y_axis = Inputs.radio(
+    ["Average Depth", "nMissing", "nRefHom", "nNonRefHom", "nHets"],
+    {label: "Y-axis", value: "nMissing"})
+
+viewof colorby_psc = Inputs.radio(["ID", "Population", "Health status", "Season", "Location", "Sex", "Type of sample", "RDS Status", "DS Status", "Health status", "COD", "Age", "GV Status (P2 P3 primers)"], {label: "Color By:", value: "Location"})
+```
+
+## Row
+```{ojs}
+Plot.plot({
+  round: true,
+  color: {legend: false},
+  grid: true,
+  inset: 40,
+  marks: [
+    Plot.frame(),
+    Plot.dot(psc_t, 
+        {x: psc_x_axis, 
+         y: psc_y_axis,
+         tip: true, 
+         fill: colorby_psc, 
+         height: "80%",
+        channels: {name: "ID", nRefHom: "nRefHom", nNonRefHom: "nNonRefHom", nHets: "nHets", nIndels: "nIndels", nSingletons: "nSingletons"}
+         
+        }),
+  ]
+})
+```
+
+```{ojs}
+Inputs.table(psc_t, {rows: 1000, height: "90%"})
+```

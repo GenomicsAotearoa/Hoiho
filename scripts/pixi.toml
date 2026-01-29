@@ -1,0 +1,74 @@
+[project]
+authors = ["Joseph Guhlin <joseph.guhlin@gmail.com>"]
+channels = ["conda-forge", "bioconda"]
+description = "Add a short description here"
+name = "hoiho"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[environments]
+bio2zarr = { features = ["bio2zarr"], no-default-feature = true }
+
+[dependencies]
+python = "3.12.*"
+uv = ">=0.8.12,<0.9"
+pip = ">=25.1.1,<26"
+plink2 = ">=2.0a5.12,<3"
+pyarrow = ">=17.0.0,<18"
+scikit-learn = ">=1.5.2,<2"
+bcftools = ">=1.21,<2"
+gatk = ">=3.8,<4"
+picard = ">=3.0.0,<4"
+openjdk = ">=8.0.412,<9"
+dgenies = ">=1.5.0,<2"
+vcftools = ">=0.1.17,<0.2"
+admixture = ">=1.3.0,<2"
+assembly-stats = ">=1.0.1,<2"
+nbclient = ">=0.10.0,<0.11"
+samtools = ">=1.21,<2"
+adapterremoval = ">=2.3.4,<3"
+jupyterlab = ">=4.3.5,<5"
+tantan = ">=51,<52"
+cyvcf2 = ">=0.31.1,<0.32"
+raxml-ng = ">=1.2.2,<2"
+nexpy = ">=1.0.10,<2"
+iqtree = ">=2.4.0,<3"
+ete3 = ">=3.1.3,<4"
+mummer4 = ">=4.0.1,<5"
+img2pdf = ">=0.6.0,<0.7"
+cd-hit = ">=4.8.1,<5"
+repeatmasker = ">=4.2.1,<5"
+eggnog-mapper = ">=2.1.12,<3"
+parallel = ">=20250222,<20250223"
+alv = ">=1.7.2,<2"
+alen = ">=0.3.1,<0.4"
+ksnp = ">=1.0.3,<2"
+seqkit = ">=2.10.0,<3"
+shapeit5 = ">=5.1.1,<6"
+ldhelmet = ">=1.10,<2"
+bwa = ">=0.7.19,<0.8"
+black = ">=25.1.0,<26"
+mafft = ">=7.526,<8"
+trimal = ">=1.5.0,<2"
+circos = ">=0.69.9,<0.70"
+goatools = ">=1.5.2,<2"
+busco = ">=6.0.0,<7"
+
+[pypi-dependencies]
+needletail = ">=0.7.0, <0.8"
+seaborn = ">=0.13.2, <0.14"
+polars = ">=1.32.3, <2"
+pyarrow = "*"
+plotly = ">=6.3.0, <7"
+zarr = "==2.18.7"
+tsinfer = "==0.4.1"
+tsdate = "==0.2.3"
+tskit = "==0.6.4"
+tqdm = ">=4.67.1, <5"
+numpy = "*"
+
+[feature.bio2zarr.dependencies]
+python = "3.11.*"
+bio2zarr = "*"

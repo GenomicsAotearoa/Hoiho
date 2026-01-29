@@ -1,0 +1,12 @@
+./tassel-5-standalone/run_pipeline.pl \
+	-Xms16g -Xmx30g \
+	-fork1 -vcf ../merged.a9.filtered.qual20_fmissing0.2.2alleles.snpsonly.pp6.19.n23_25_yep14.removed.vcf \
+	-fork2 -r phenotypes_pop_sex_rds_only.csv \
+	-combine3 -input1 -input2 -intersect \
+	-fork4 -k whole_genome_branch_GRM.txt \
+	-combine6 -input3 -input4 \
+	-mlm \
+	-mlmOutputFile /mnt/data/gwas_p3d_off_2025_31_08_phasedkinship_branchgrm_/rds \
+	-mlmCompressionLevel None \
+	-mlmVarCompEst EachMarker \
+	-input3 -input4

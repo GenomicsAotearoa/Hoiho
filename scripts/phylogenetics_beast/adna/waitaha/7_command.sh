@@ -1,0 +1,1 @@
+python 7_anc2modern_snp_liftover_better7.py --out-prefix "waitaha" --target-vcf ../../../merged.a9.filtered.qual99_fmissing0.2.maf0.05.biallelic.bcf --anc-vcf filtered2_calls_maximumLikelihood.vcf.gz --psl adna_regions_contig_liftover_a9.psl --mod-fasta a9.fasta

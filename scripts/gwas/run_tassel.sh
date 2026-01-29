@@ -1,0 +1,12 @@
+./tassel-5-standalone/run_pipeline.pl \
+	-Xms16g -Xmx30g \
+	-fork1 -h /mnt/data/genotypes.hmp.txt \
+	-fork2 -r phenotypes_numeric_covar_tests.csv \
+	-combine3 -input1 -input2 -intersect \
+	-fork4 -k phased_kinship.square.txt \
+	-combine6 -input3 -input4 \
+	-mlm \
+	-mlmOutputFile /mnt/data/gwas_p3d_off_2025_05_20_phasedkinship_/rds \
+	-mlmCompressionLevel None \
+	-mlmVarCompEst EachMarker \
+	-input3 -input4
