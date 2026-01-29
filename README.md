@@ -1,3 +1,9 @@
+# Hoiho
+
+This repo contains scripts and working directories for Hoiho (yellow-eyed penguin) genomics analyses.
+
+Authors: Joseph Guhlin<sup>1,2</sup>, Jordan Douglas<sup>3,4</sup>
+
 ```mermaid
 flowchart TB
   %% Nodes
